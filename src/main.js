@@ -1,24 +1,49 @@
-import './style.css'
-import javascriptLogo from './javascript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.js'
+const SUPABASE_URL = 'https://ukenyrinoivbdetlupyp.supabase.co'
+const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrZW55cmlub2l2YmRldGx1cHlwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTU1NDgwNSwiZXhwIjoyMDY1MTMwODA1fQ.qTIKiiy6YSrs4mo_tzUFdXxtGHq78gmxnbkHe2djU8Q'
+const TABLE = 'article'
 
-document.querySelector('#app').innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-      <img src="${javascriptLogo}" class="logo vanilla" alt="JavaScript logo" />
-    </a>
-    <h1 class="text-2xl font-bold text-primary">Hello Vite!</h1>
-    <div class="card">
-      <button id="counter" type="button" class="bg-blue-300 p-4"></button>
+const headers = {
+  apikey: API_KEY,
+  Authorization: `Bearer ${API_KEY}`,
+  'Content-Type': 'application/json'
+}
+
+async function loadArticles() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?select=*&order=created_at.desc`, { headers })
+  const data = await res.json()
+  const container = document.getElementById('articles')
+  container.innerHTML = data.map(a => `
+    <div>
+      <h2>${a.title}</h2>
+      <h4>${a.subtitle}</h4>
+      <p>${a.author}</p>
+      <p>${new Date(a.created_at).toLocaleDateString()}</p>
+      <p>${a.content}</p>
+      <hr />
     </div>
-    <p class="read-the-docs">
-      Click on the Vite logo to learn more
-    </p>
-  </div>
-`
+  `).join('')
+}
 
-setupCounter(document.querySelector('#counter'))
+document.getElementById('articleForm').addEventListener('submit', async (e) => {
+  e.preventDefault()
+  const form = new FormData(e.target)
+  const data = {
+    title: form.get('title'),
+    subtitle: form.get('subtitle'),
+    author: form.get('author'),
+    content: form.get('content'),
+    is_published: true,
+    tags: []
+  }
+
+  await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data)
+  })
+
+  e.target.reset()
+  loadArticles()
+})
+
+loadArticles()
